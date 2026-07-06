@@ -121,9 +121,11 @@ export async function parsePDFFile(file: File) {
       throw new Error('Could not get canvas context');
     }
 
+    // pdfjs types may require 'canvas' property; provide both to satisfy type checks
     await firstPage.render({
+      canvas,
       canvasContext: context,
-      viewport: viewport,
+      viewport,
     }).promise;
 
     // Convert canvas to data URL
