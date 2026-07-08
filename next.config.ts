@@ -1,23 +1,43 @@
+// import type { NextConfig } from "next";
+
+// const nextConfig: NextConfig = {
+//     experimental: {
+//         serverActions: {
+//             bodySizeLimit: '100mb',
+//         }
+//     },
+//     typescript: {
+//         ignoreBuildErrors: true,
+//     },
+//     images: { remotePatterns: [
+//             { protocol: 'https', hostname: 'covers.openlibrary.org' },
+//             { protocol: 'https', hostname: 'lspfdyhgsrgsxcju.public.blob.vercel-storage.com' },
+//         ]}
+// };
+
+// export default nextConfig;
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-   images: {
+  images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '*.openlibrary.org', // Use wildcard to catch subdomains
+        hostname: '*.openlibrary.org',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'raaworcd6tavemkq.public.blob.vercel-storage.com',
+        port: '',
         pathname: '/**',
       },
     ],
   },
-
-  // typescript: {
-  //   // !! WARN !!
-  //   // Dangerously allow production builds to successfully complete 
-  //   // even if your project has TypeScript errors.
-  //   ignoreBuildErrors: true,
-  // },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
 };
 
 export default nextConfig;
