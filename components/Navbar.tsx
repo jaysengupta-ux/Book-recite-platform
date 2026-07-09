@@ -1,46 +1,57 @@
 "use client"
 import Image from "next/image"
 import Link from "next/link"
-import {usePathname} from "next/navigation"
-import {cn} from "@/lib/utils"
-import {  Show, SignInButton,  UserButton, useUser } from "@clerk/nextjs";
-
+import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
+import { Show, SignInButton, UserButton, useUser } from "@clerk/nextjs";
 
 const navItems = [
-  { label: "Library", href: "/"},
-  { label: "Add New", href: "/books/new"}
+  { label: "Library", href: "/" },
+  { label: "Add New", href: "/books/new" }
 ]
 
 const Navbar = () => {
-
   const pathName = usePathname();
-  const {user} = useUser();
+  const { user } = useUser();
+
+  // Check if current route is the subscriptions page to highlight it
+  const isPricingActive = pathName === "/subscriptions";
+
   return (
-   <header className="w-full fixed z-50 bg-(--bg-primary)">
+    <header className="w-full fixed z-50 bg-(--bg-primary)">
       <div className="wrapper navbar-height py-4 flex justify-between items-center">
         <Link href="/" className="flex gap-0.5 items-center">
-        <Image src="/assets/logo.png" alt="Bookified"
-        width={42} height={26} 
-       />
-        <span className="logo-text">Bookified</span>
+          <Image src="/assets/logo.png" alt="Bookified" width={42} height={26} />
+          <span className="logo-text">Bookified</span>
         </Link>
 
         <nav className='w-fit flex gap-7.5 items-center'>
-          {navItems.map(({label, href}) => {
+          {navItems.map(({ label, href }) => {
             const isActive = pathName === href ||
-            (href !== "/" && pathName.startsWith(href));
+              (href !== "/" && pathName.startsWith(href));
 
             return (
               <Link href={href} key={label}
-              className={cn('nav-link-base', isActive ? "nav-link-active":
-                "text-black hover:opacity-70"
-              )}>
+                className={cn('nav-link-base', isActive ? "nav-link-active" :
+                  "text-black hover:opacity-70"
+                )}>
                 {label}
               </Link>
             )
           })}
-        <div className="flex gap-7.5 items-center">
-            
+          
+          <div className="flex gap-7.5 items-center">
+            {/* Dedicated Pricing Navigation Link */}
+            <Link 
+              href="/subscriptions" 
+              className={cn(
+                'nav-link-base text-sm font-medium transition',
+                isPricingActive ? "nav-link-active" : "text-black hover:opacity-70"
+              )}
+            >
+              Pricing
+            </Link>
+
             {/* Show ONLY Sign In when logged out */}
             <Show when="signed-out">
               <SignInButton mode="modal">
@@ -52,18 +63,15 @@ const Navbar = () => {
 
             {/* Show ONLY User Profile when logged in */}
             <Show when="signed-in">
-              <div className="nav-user-link">
-              <UserButton />
-              {user?.firstName && (
-                <Link href="/subscription"
-                className="nav-user-name"
-                >
-                  {user.firstName}
-                </Link>
-              )}
+              <div className="nav-user-link flex items-center gap-2">
+                <UserButton />
+                {user?.firstName && (
+                  <Link href="/subscriptions" className="nav-user-name">
+                    {user.firstName}
+                  </Link>
+                )}
               </div>
             </Show>
-            
           </div>
         </nav>
       </div>

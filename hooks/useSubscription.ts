@@ -1,13 +1,26 @@
 'use client';
 
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useAuth, useUser, useSession } from "@clerk/nextjs"; // 💡 Added useSession
 import { PLANS, PLAN_LIMITS, PlanType } from "@/lib/subscription-constants";
+import { useEffect } from "react";
 
 export const useSubscription = () => {
     const { has, isLoaded: isAuthLoaded } = useAuth();
     const { user, isLoaded: isUserLoaded } = useUser();
+    const { session } = useSession(); // 💡 Get the active client session token control wrapper
 
     const isLoaded = isAuthLoaded && isUserLoaded;
+
+    // 💡 FORCE CLERK REFRESH ON MOUNT:
+    // This breaks the local session cache and forces Clerk to sync immediately 
+    // with your real-time backend updates when shifting tiers!
+    useEffect(() => {
+        if (session) {
+            session.reload().catch((err) => 
+                console.error("Clerk Session cache reload failed:", err)
+            );
+        }
+    }, [session]);
 
     if (!isLoaded) {
         return {

@@ -2,11 +2,11 @@
 
 import {CreateBook, TextSegment} from "@/types";
 import {connectToDatabase} from "@/database/mongoose";
-import { escapeRegex, generateSlug, serializeData} from "@/lib/utils";
+import {escapeRegex, generateSlug, serializeData} from "@/lib/utils";
 import Book from "@/database/models/book.model";
 import BookSegment from "@/database/models/book-segment.model";
-import mongoose from 'mongoose';
-
+import mongoose from "mongoose";
+import {getUserPlan} from "@/lib/subscription.server";
 
 export const getAllBooks = async (search?: string) => {
     try {
@@ -38,7 +38,6 @@ export const getAllBooks = async (search?: string) => {
         }
     }
 }
-
 
 export const checkBookExists = async (title: string) => {
     try {
@@ -83,40 +82,38 @@ export const createBook = async (data: CreateBook) => {
         }
 
         // Todo: Check subscription limits before creating a book
-        // const { getUserPlan } = await import("@/lib/subscription.server");
-        // const { PLAN_LIMITS } = await import("@/lib/subscription-constants");
+        const { getUserPlan } = await import("@/lib/subscription.server");
+        const { PLAN_LIMITS } = await import("@/lib/subscription-constants");
 
-        // const { auth } = await import("@clerk/nextjs/server");
-        // const { userId } = await auth();
+        const { auth } = await import("@clerk/nextjs/server");
+        const { userId } = await auth();
 
-        // if (!userId || userId !== data.clerkId) {
-        //     return { success: false, error: "Unauthorized" };
-        // }
+        if (!userId || userId !== data.clerkId) {
+            return { success: false, error: "Unauthorized" };
+        }
 
-        // const plan = await getUserPlan();
-        // const limits = PLAN_LIMITS[plan];
+        const plan = await getUserPlan();
+        const limits = PLAN_LIMITS[plan];
 
-        // const bookCount = await Book.countDocuments({ clerkId: userId });
+        const bookCount = await Book.countDocuments({ clerkId: userId });
 
-        // if (bookCount >= limits.maxBooks) {
-        //     const { revalidatePath } = await import("next/cache");
-        //     revalidatePath("/");
+        if (bookCount >= limits.maxBooks) {
+            const { revalidatePath } = await import("next/cache");
+            revalidatePath("/");
 
-        //     return {
-        //         success: false,
-        //         error: `You have reached the maximum number of books allowed for your ${plan} plan (${limits.maxBooks}). Please upgrade to add more books.`,
-        //         isBillingError: true,
-        //     };
-        // }
+            return {
+                success: false,
+                error: `You have reached the maximum number of books allowed for your ${plan} plan (${limits.maxBooks}). Please upgrade to add more books.`,
+                isBillingError: true,
+            };
+        }
 
-        const book = await Book.create({...data, slug, totalSegments: 0});
+        const book = await Book.create({...data, clerkId: userId, slug, totalSegments: 0});
 
         return {
             success: true,
             data: serializeData(book),
         }
-
-        
     } catch (e) {
         console.error('Error creating a book', e);
 
@@ -127,6 +124,27 @@ export const createBook = async (data: CreateBook) => {
     }
 }
 
+export const getBookBySlug = async (slug: string) => {
+    try {
+        await connectToDatabase();
+
+        const book = await Book.findOne({ slug }).lean();
+
+        if (!book) {
+            return { success: false, error: 'Book not found' };
+        }
+
+        return {
+            success: true,
+            data: serializeData(book)
+        }
+    } catch (e) {
+        console.error('Error fetching book by slug', e);
+        return {
+            success: false, error: e
+        }
+    }
+}
 
 export const saveBookSegments = async (bookId: string, clerkId: string, segments: TextSegment[]) => {
     try {
@@ -157,30 +175,6 @@ export const saveBookSegments = async (bookId: string, clerkId: string, segments
         }
     }
 }
-
-
-export const getBookBySlug = async (slug: string) => {
-    try {
-        await connectToDatabase();
-
-        const book = await Book.findOne({ slug }).lean();
-
-        if (!book) {
-            return { success: false, error: 'Book not found' };
-        }
-
-        return {
-            success: true,
-            data: serializeData(book)
-        }
-    } catch (e) {
-        console.error('Error fetching book by slug', e);
-        return {
-            success: false, error: e
-        }
-    }
-}
-
 
 // Searches book segments using MongoDB text search with regex fallback
 export const searchBookSegments = async (bookId: string, query: string, limit: number = 5) => {
